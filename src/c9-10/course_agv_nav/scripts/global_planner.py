@@ -9,8 +9,8 @@ from nav_msgs.msg import OccupancyGrid
 from std_msgs.msg import Bool
 import numpy as np
 import matplotlib.pyplot as plt
-
-## TODO import your own planner
+import a_star
+import multiprocessing
 
 class GlobalPlanner:
     def __init__(self):
@@ -18,8 +18,8 @@ class GlobalPlanner:
         self.plan_sy = 0.0
         self.plan_gx = 8.0
         self.plan_gy = -8.0
-        self.plan_grid_size = 0.3
-        self.plan_robot_radius = 0.6
+        self.plan_grid_size = 0.2
+        self.plan_robot_radius = 0.2
         self.plan_ox = []
         self.plan_oy = []
         self.plan_rx = []
@@ -36,17 +36,15 @@ class GlobalPlanner:
         self.updateMap()
         # self.updateGlobalPose()
 
-        pass
     def goalCallback(self,msg):
         self.plan_goal = msg
         self.plan_gx = msg.pose.position.x
         self.plan_gy = msg.pose.position.y
-        # print("get new goal!!! ",self.plan_goal)
         self.replan(0)
-        pass
 
     def collisionCallback(self,msg):
         self.replan(0)
+
     def updateGlobalPose(self):
         try:
             self.tf.waitForTransform("/map", "/robot_base", rospy.Time(), rospy.Duration(4.0))
@@ -60,23 +58,25 @@ class GlobalPlanner:
         print('get request for replan!!!!!!!!')
         self.initPlanner()
         self.updateGlobalPose()
-        ## TODO get planner result
-        ## e.g. self.plan_rx,self.plan_ry = self.planner.planning(self.plan_sx,self.plan_sy,self.plan_gx,self.plan_gy)
         
+        self.plan_rx,self.plan_ry = self.planner.planning(self.plan_sx,self.plan_sy,self.plan_gx,self.plan_gy)
+        self.showMap()
         self.publishPath()
         res = True
         return PlanResponse(res)
+
     def initPlanner(self):
         map_data = np.array(self.map.data).reshape((-1,self.map.info.height)).transpose()
         ox,oy = np.nonzero(map_data > 50)
         self.plan_ox = (ox*self.map.info.resolution+self.map.info.origin.position.x).tolist()
         self.plan_oy = (oy*self.map.info.resolution+self.map.info.origin.position.y).tolist()
-        ## TODO init your planner
-        ## e.g. self.planner = Planner(...)
+        self.planner = a_star.AStarPlanner(self.plan_ox, self.plan_oy, self.plan_grid_size, self.plan_robot_radius)
 
     def mapCallback(self,msg):
         self.map = msg
-        pass
+        # self.initPlanner()
+        # self.showMap()
+
     def updateMap(self):
         rospy.wait_for_service('/static_map')
         try:
@@ -107,13 +107,24 @@ class GlobalPlanner:
             pose.pose.orientation.w = 1
             path.poses.append(pose)
         self.path_pub.publish(path)
+    
+    def showMap(self):
+        plt.plot(self.plan_ox, self.plan_oy, ".k")
+        plt.plot(self.plan_sx, self.plan_sy, "og")
+        plt.plot(self.plan_gx, self.plan_gy, "xb")
+        plt.plot(self.plan_rx, self.plan_ry, "-r")
+        plt.grid(True)
+        plt.axis("equal")
+        plt.show()
+    
+    def generateVelocity(self):
+        pass
 
 
 def main():
     rospy.init_node('global_planner')
     gp = GlobalPlanner()
     rospy.spin()
-    pass
 
 if __name__ == '__main__':
     main()
