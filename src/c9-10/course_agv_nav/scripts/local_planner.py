@@ -201,11 +201,11 @@ class LocalPlanner:
         # Update obstacle
         self.updateObstacle()
         u = self.dwa.plan(self.plan_x, self.plan_goal, self.plan_ob)
-        alpha = 0.5
+        # alpha = 0.5
         # self.vx = u[0] * alpha + self.vx * (1 - alpha)
         # self.vw = u[1] * alpha + self.vw * (1 - alpha)
-        self.vx = max(min(u[0], 0.2), -0.2)
-        self.vw = max(min(u[1], 0.5), -0.5)
+        self.vx = u[0]
+        self.vw = u[1]
         print("v, w: ", self.vx, self.vw)
         # self.vx, self.vw = 0, 0
         # print("mdbg; ",u)

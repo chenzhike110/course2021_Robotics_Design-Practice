@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import math
 import matplotlib.pyplot as plt
 
@@ -249,7 +250,7 @@ def main():
 
     a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
     a_star.show_map(ox, oy, sx, sy, gx, gy)
-    # rx, ry = a_star.planning(sx, sy, gx, gy)
+    rx, ry = a_star.planning(sx, sy, gx, gy)
 
     if show_animation:  # pragma: no cover
         plt.plot(rx, ry, "-r")
